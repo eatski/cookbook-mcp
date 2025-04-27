@@ -44,14 +44,12 @@ server.tool(
       content: [
         {
           type: "text",
-          text: `
-          タスクid:
-          ${nextTaskIndex}
-          次のタスク: 
-          ${nextTask}
+          text: `タスクid:
+${nextTaskIndex}
+次のタスク: 
+${nextTask}
 
-          完了した場合、次のタスクを get_next_task で取得してください。
-          `
+完了した場合、次のタスクを get_next_task で取得してください。`
         }
       ]
     };
