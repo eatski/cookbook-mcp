@@ -8,10 +8,38 @@ const server = new McpServer({
 });
 
 server.tool(
-  "double_number",
-  "与えられた数値を2倍にする",
-  {num: z.number().describe("数値")},
-  ({num}) => ({content: [{type: "text", text: (num * 2).toString()}]}),
+  "calc_number",
+  "四則演算（加算、減算、乗算、除算）を行う",
+  {
+    num1: z.number().describe("1つ目の数値"),
+    num2: z.number().describe("2つ目の数値"),
+    op: z.enum(["add", "subtract", "multiply", "divide"]).describe("演算子（add: 加算, subtract: 減算, multiply: 乗算, divide: 除算）")
+  },
+  ({num1, num2, op}) => {
+    let result: number;
+    
+    switch (op) {
+      case "add":
+        result = num1 + num2;
+        break;
+      case "subtract":
+        result = num1 - num2;
+        break;
+      case "multiply":
+        result = num1 * num2;
+        break;
+      case "divide":
+        if (num2 === 0) {
+          return {
+            content: [{type: "text", text: "エラー: ゼロによる除算はできません"}]
+          };
+        }
+        result = num1 / num2;
+        break;
+    }
+    
+    return {content: [{type: "text", text: result.toString()}]};
+  },
 );
 
 async function main() {
