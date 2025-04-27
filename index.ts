@@ -2,7 +2,6 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { promises as fs } from "fs";
-import path from "path";
 import { parse } from "yaml";
 
 const RecipeSchema = z.object({
@@ -19,13 +18,11 @@ server.tool(
   "get_next_task",
   "次のタスクを取得する",
   {
-    cookbookPath: z.string().describe("cookbookのディレクトリの絶対パス"),
-    recipeName: z.string().describe("レシピ名"),
-    currentTaskId: z.string().nullable().describe("直前に完了したタスクid レシピを始めた時点ではnull"),
+  yamlPath: z.string().describe("レシピのYAMLファイルパス（絶対パス）"),
+  currentTaskId: z.string().nullable().describe("直前に完了したタスクid レシピを始めた時点ではnull"),
   },
-  async ({ recipeName, cookbookPath, currentTaskId }) => {
-    const recipePath = path.join(cookbookPath, recipeName);
-    const recipeContent = await fs.readFile(recipePath, "utf-8");
+  async ({ yamlPath, currentTaskId }) => {
+    const recipeContent = await fs.readFile(yamlPath, "utf-8");
     const parsedRecipe = parse(recipeContent);
     const recipe = RecipeSchema.parse(parsedRecipe);
     
@@ -60,53 +57,6 @@ server.tool(
     };
   }
 )
-
-server.tool(
-  "get_recipes",
-  "レシピ一覧を取得する",
-  {
-    cookbookPath: z.string().describe("cookbookのディレクトリの絶対パス"),
-  },
-  async ({ cookbookPath }) => {
-    try {
-      const entries = await fs.readdir(cookbookPath, { withFileTypes: true });
-      const recipes = [];
-
-      // ファイルを読み込んでパースを試みる
-      for (const entry of entries.filter(entry => entry.isFile())) {
-        try {
-          const content = await fs.readFile(path.join(cookbookPath, entry.name), 'utf-8');
-          const recipe = RecipeSchema.parse(parse(content));
-          recipes.push({
-            name: entry.name,
-            description: recipe.description
-          });
-        } catch {
-          // パースに失敗した場合はスキップ
-          continue;
-        }
-      }
-      
-      return {
-        content: [
-          {
-            type: "text", 
-            text: JSON.stringify(recipes)
-          }
-        ]
-      };
-    } catch (error) {
-      return {
-        content: [
-          {
-            type: "text", 
-            text: `エラー: ${error instanceof Error ? error.message : String(error)}`
-          }
-        ]
-      };
-    }
-  }
-);
 
 async function main() {
   const transport = new StdioServerTransport();
