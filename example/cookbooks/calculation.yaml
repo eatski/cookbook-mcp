@@ -1,0 +1,12 @@
+description: 基本的な計算を行うレシピ
+tasks:
+  - id: "01_add"
+    content: "現在の数字に5を足せ"
+  - id: "02_subtract"
+    content: "現在の数字から3を引け"
+  - id: "03_multiply"
+    content: "現在の数字に2をかけよ"
+  - id: "04_divide"
+    content: "現在の数字を4で割れ"
+  - id: "05_add_10"
+    content: "現在の数字に10を足せ"

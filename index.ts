@@ -3,6 +3,17 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { promises as fs } from "fs";
 import path from "path";
+import { parse } from "yaml";
+
+const TaskSchema = z.object({
+  id: z.string(),
+  content: z.string()
+});
+
+const RecipeSchema = z.object({
+  description: z.string(),
+  tasks: z.array(TaskSchema)
+});
 
 const server = new McpServer({
   name: "cookbook-mcp-server",
@@ -19,15 +30,14 @@ server.tool(
   },
   async ({ recipeName, cookbookPath, currentTaskId: currentTaskName }) => {
     const recipePath = path.join(cookbookPath, recipeName);
-    const tasks = await fs.readdir(recipePath, { withFileTypes: true });
-    const taskSortedByName = tasks
-      .filter(entry => entry.isFile())
-      .sort((a, b) => a.name.localeCompare(b.name));
-
-    const currentTaskIndex = taskSortedByName.findIndex(task => task.name === currentTaskName);
-
+    const recipeContent = await fs.readFile(recipePath, "utf-8");
+    const parsedRecipe = parse(recipeContent);
+    const recipe = RecipeSchema.parse(parsedRecipe);
+    
+    const currentTaskIndex = currentTaskName ? recipe.tasks.findIndex(task => task.id === currentTaskName) : -1;
     const nextTaskIndex = currentTaskIndex + 1;
-    const nextTask = taskSortedByName[nextTaskIndex];
+    const nextTask = recipe.tasks[nextTaskIndex];
+
     if (!nextTask) {
       return {
         content: [
@@ -38,17 +48,15 @@ server.tool(
         ]
       };
     }
-    const nextTaskPath = path.join(recipePath, nextTask.name);
-    const nextTaskContent = await fs.readFile(nextTaskPath, "utf-8");
     return {
       content: [
         {
           type: "text",
           text: `
           タスクid:
-          ${nextTask.name}
+          ${nextTask.id}
           次のタスク: 
-          ${nextTaskContent}
+          ${nextTask.content}
 
           完了した場合、次のタスクを get_next_task で取得してください。
           `
@@ -66,19 +74,29 @@ server.tool(
   },
   async ({ cookbookPath }) => {
     try {
-      // 指定されたディレクトリ内のファイル・ディレクトリ一覧を取得
       const entries = await fs.readdir(cookbookPath, { withFileTypes: true });
-      
-      // ディレクトリのみをフィルタリング
-      const directories = entries
-        .filter(entry => entry.isDirectory())
-        .map(dir => dir.name);
+      const recipes = [];
+
+      // ファイルを読み込んでパースを試みる
+      for (const entry of entries.filter(entry => entry.isFile())) {
+        try {
+          const content = await fs.readFile(path.join(cookbookPath, entry.name), 'utf-8');
+          const recipe = RecipeSchema.parse(parse(content));
+          recipes.push({
+            name: entry.name,
+            description: recipe.description
+          });
+        } catch {
+          // パースに失敗した場合はスキップ
+          continue;
+        }
+      }
       
       return {
         content: [
           {
             type: "text", 
-            text: JSON.stringify(directories)
+            text: JSON.stringify(recipes)
           }
         ]
       };

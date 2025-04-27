@@ -22,7 +22,8 @@
   },
   "homepage": "https://github.com/eatski/cookbook-mcp#readme",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.10.2"
+    "@modelcontextprotocol/sdk": "^1.10.2",
+    "yaml": "^2.7.1"
   },
   "devDependencies": {
     "@types/node": "^22.15.2",
