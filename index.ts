@@ -5,14 +5,9 @@ import { promises as fs } from "fs";
 import path from "path";
 import { parse } from "yaml";
 
-const TaskSchema = z.object({
-  id: z.string(),
-  content: z.string()
-});
-
 const RecipeSchema = z.object({
   description: z.string(),
-  tasks: z.array(TaskSchema)
+  tasks: z.array(z.string())
 });
 
 const server = new McpServer({
@@ -28,13 +23,13 @@ server.tool(
     recipeName: z.string().describe("レシピ名"),
     currentTaskId: z.string().nullable().describe("直前に完了したタスクid レシピを始めた時点ではnull"),
   },
-  async ({ recipeName, cookbookPath, currentTaskId: currentTaskName }) => {
+  async ({ recipeName, cookbookPath, currentTaskId }) => {
     const recipePath = path.join(cookbookPath, recipeName);
     const recipeContent = await fs.readFile(recipePath, "utf-8");
     const parsedRecipe = parse(recipeContent);
     const recipe = RecipeSchema.parse(parsedRecipe);
     
-    const currentTaskIndex = currentTaskName ? recipe.tasks.findIndex(task => task.id === currentTaskName) : -1;
+    const currentTaskIndex = currentTaskId ? parseInt(currentTaskId) : -1;
     const nextTaskIndex = currentTaskIndex + 1;
     const nextTask = recipe.tasks[nextTaskIndex];
 
@@ -54,9 +49,9 @@ server.tool(
           type: "text",
           text: `
           タスクid:
-          ${nextTask.id}
+          ${nextTaskIndex}
           次のタスク: 
-          ${nextTask.content}
+          ${nextTask}
 
           完了した場合、次のタスクを get_next_task で取得してください。
           `
