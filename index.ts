@@ -16,7 +16,7 @@ const server = new McpServer({
 
 server.tool(
   "get_next_task",
-  "次のタスクを取得する",
+  "レシピから次のタスクを取得する",
   {
   yamlPath: z.string().describe("レシピのYAMLファイルパス（絶対パス）"),
   currentTaskId: z.string().nullable().describe("直前に完了したタスクid レシピを始めた時点ではnull"),
